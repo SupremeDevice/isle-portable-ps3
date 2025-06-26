@@ -22,8 +22,8 @@ add_library(miniwin STATIC EXCLUDE_FROM_ALL
   src/internal/meshutils.cpp
 
   # D3DRM backends
-  src/d3drm/backends/sdl3gpu/renderer.cpp
-  src/d3drm/backends/sdl3gpu/shaders/generated/ShaderIndex.cpp
+  # src/d3drm/backends/sdl3gpu/renderer.cpp
+  # src/d3drm/backends/sdl3gpu/shaders/generated/ShaderIndex.cpp
   src/d3drm/backends/software/renderer.cpp
 )
 
@@ -61,17 +61,18 @@ target_compile_definitions(miniwin PUBLIC MINIWIN)
 target_include_directories(miniwin
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/internal
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/d3drm/backends/sdl3gpu/shaders/generated
+    # ${CMAKE_CURRENT_SOURCE_DIR}/src/d3drm/backends/sdl3gpu/shaders/generated
 )
 target_link_libraries(miniwin PUBLIC miniwin-headers)
 
-target_link_libraries(miniwin PRIVATE SDL3::SDL3)
+# target_link_libraries(miniwin PRIVATE SDL3::SDL3)
+target_link_libraries(miniwin PRIVATE SDL2::SDL2)
 
 # Shader stuff
 
-set(shader_src_dir "${CMAKE_CURRENT_SOURCE_DIR}/src/d3drm/backends/sdl3gpu/shaders/src")
-set(shader_gen_dir "${CMAKE_CURRENT_SOURCE_DIR}/src/d3drm/backends/sdl3gpu/shaders/generated")
-set(py_gencshadersource "${CMAKE_CURRENT_SOURCE_DIR}/src/d3drm/backends/sdl3gpu/shaders/gencshadersource.py")
+# set(shader_src_dir "${CMAKE_CURRENT_SOURCE_DIR}/src/d3drm/backends/sdl3gpu/shaders/src")
+# set(shader_gen_dir "${CMAKE_CURRENT_SOURCE_DIR}/src/d3drm/backends/sdl3gpu/shaders/generated")
+# set(py_gencshadersource "${CMAKE_CURRENT_SOURCE_DIR}/src/d3drm/backends/sdl3gpu/shaders/gencshadersource.py")
 
 set(miniwin_shaders
   "${shader_src_dir}/PositionColor.vert.hlsl"

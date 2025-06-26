@@ -25,6 +25,62 @@ else()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static -static-libgcc -static-libstdc++")
 endif()
 
+# Attempting to add PS3 compiling flags ############
+INCLUDE(CMakeForceCompiler)
+
+if(DEFINED ENV{PS3DEV})
+    SET(PS3DEV $ENV{PS3DEV})
+else()
+    message(FATAL_ERROR "The environment variable PS3DEV needs needs to be defined.")
+endif()
+
+if(DEFINED ENV{PSL1GHT})
+    SET(PSL1GHT $ENV{PSL1GHT})
+else()
+    message(FATAL_ERROR "The environment variable PSL1GHT needs to be defined.")
+endif()
+
+SET(CMAKE_SYSTEM_NAME Generic)
+SET(CMAKE_SYSTEM_VERSION 1)
+SET(CMAKE_SYSTEM_PROCESSOR powerpc)
+
+SET(CMAKE_C_COMPILER ${PS3DEV}/ppu/bin/ppu-gcc)
+SET(CMAKE_CXX_COMPILER ${PS3DEV}/ppu/bin/ppu-g++)
+
+SET(PPU_CFLAGS "-mhard-float -fmodulo-sched -ffunction-sections -fdata-sections -I$ENV{PSL1GHT}/ppu/include -I$ENV{PSL1GHT}/portlibs/ppu/include -I$ENV{PSL1GHT}/ppu/include/simdmath")
+SET(PPU_CXXFLAGS "-D_GLIBCXX11_USE_C99_STDIO ${PPU_CFLAGS}")
+SET(PPU_LDFLAGS "-mhard-float -fmodulo-sched -Wl,--gc-sections -L$ENV{PSL1GHT}/ppu/lib -L$ENV{PSL1GHT}/portlibs/ppu/lib")
+
+SET(CMAKE_INSTALL_PREFIX $ENV{PS3DEV}/portlibs/ppu)
+
+SET(CMAKE_FIND_ROOT_PATH $ENV{PS3DEV} $ENV{PS3DEV}/ppu $ENV{PS3DEV}/portlibs/ppu)
+SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+
+SET_PROPERTY(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
+
+SET(CMAKE_C_FLAGS_INIT ${PPU_CFLAGS})
+SET(CMAKE_CXX_FLAGS_INIT ${PPU_CXXFLAGS})
+SET(CMAKE_EXE_LINKER_FLAGS_INIT ${PPU_LDFLAGS})
+SET(CMAKE_EXECUTABLE_SUFFIX "elf")
+SET(CMAKE_EXECUTABLE_SUFFIX_ASM .elf)
+SET(CMAKE_EXECUTABLE_SUFFIX_C .elf)
+SET(CMAKE_EXECUTABLE_SUFFIX_CXX .elf)
+
+
+SET(CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS "-nostartfiles -Wl,-r -Wl,-d")
+
+SET($ENV{PKG_CONFIG_DIR} "")
+SET($ENV{PKG_CONFIG_PATH} "")
+SET($ENV{PKG_CONFIG_SYSROOT_DIR} "")
+SET($ENV{PKG_CONFIG_LIBDIR} "$ENV{PS3DEV}/portlibs/ppu/lib/pkgconfig")
+
+SET(PS3 ON)
+SET(PLATFORM_PS3 TRUE)
+SET(PPU TRUE)
+###################################################
+
 find_program(SDL_SHADERCROSS_BIN NAMES "shadercross")
 find_package(Python3 3.11 COMPONENTS Interpreter)
 
@@ -55,15 +111,27 @@ add_library(Isle::iniparser INTERFACE IMPORTED)
 
 if (DOWNLOAD_DEPENDENCIES)
     # FetchContent downloads and configures dependencies
-    message(STATUS "Fetching SDL3 and iniparser. This might take a while...")
+    message(STATUS "Fetching SDL2 and iniparser. This might take a while...")
+    # message(STATUS "Fetching SDL3 and iniparser. This might take a while...")
+    # include(FetchContent)
+    # FetchContent_Declare(
+    #     SDL3
+    #     GIT_REPOSITORY "https://github.com/libsdl-org/SDL.git"
+    #     GIT_TAG "main"
+    #     EXCLUDE_FROM_ALL
+    # )
+    # FetchContent_MakeAvailable(SDL3)
+
+    # Would like to give option eventually to choose SDL2 or SDL3 automatically 
+    # based on build platform, if this gets merged back to main branch.
     include(FetchContent)
     FetchContent_Declare(
-        SDL3
+        SDL2
         GIT_REPOSITORY "https://github.com/libsdl-org/SDL.git"
-        GIT_TAG "main"
+        GIT_TAG "SDL2"
         EXCLUDE_FROM_ALL
     )
-    FetchContent_MakeAvailable(SDL3)
+    FetchContent_MakeAvailable(SDL2)    
 
     FetchContent_Declare(
         iniparser
@@ -81,7 +149,8 @@ else()
     # find_package looks for already-installed system packages.
     # Configure with `-DCMAKE_PREFIX_PATH="/path/to/package1;/path/to/package2"`
     # to add search paths.
-    find_package(SDL3 CONFIG REQUIRED)
+    # find_package(SDL3 CONFIG REQUIRED)
+    find_package(SDL2 CONFIG REQUIRED)
 
     find_package(iniparser REQUIRED CONFIG COMPONENTS shared)
     target_link_libraries(Isle::iniparser INTERFACE iniparser-shared)
@@ -153,8 +222,10 @@ target_include_directories(lego1 PUBLIC "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/L
 target_include_directories(lego1 PUBLIC "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/LEGO1/lego/sources>")
 target_include_directories(lego1 PUBLIC "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/LEGO1/lego/legoomni/include>")
 target_include_directories(lego1 PUBLIC "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/LEGO1/lego/legoomni/include/actions>")
-target_link_libraries(lego1 PRIVATE SDL3::SDL3)
-target_link_libraries(lego1 PUBLIC SDL3::Headers)
+# target_link_libraries(lego1 PRIVATE SDL3::SDL3)
+# target_link_libraries(lego1 PUBLIC SDL3::Headers)
+target_link_libraries(lego1 PRIVATE SDL2::SDL2)
+# target_link_libraries(lego1 PUBLIC SDL2::Headers) #might not exist?
 target_link_libraries(lego1 PRIVATE $<$<BOOL:${ISLE_USE_DX5}>:DirectX5::DirectX5>)
 if(WIN32)
   set_property(TARGET lego1 PROPERTY PREFIX "")
@@ -485,7 +556,8 @@ if (ISLE_BUILD_APP)
   target_link_libraries(isle PRIVATE $<$<BOOL:${ISLE_USE_DX5}>:DirectX5::DirectX5>)
 
   # Link SDL and iniparser
-  target_link_libraries(isle PRIVATE SDL3::SDL3 Isle::iniparser)
+  # target_link_libraries(isle PRIVATE SDL3::SDL3 Isle::iniparser)
+  target_link_libraries(isle PRIVATE SDL2::SDL2 Isle::iniparser)
 
   # Allow unconditional include of miniwin/miniwindevice.h
   target_link_libraries(isle PRIVATE miniwin-headers)
@@ -501,7 +573,9 @@ if (ISLE_BUILD_APP)
       ISLE/isledebug.cpp
     )
     target_compile_definitions(isle PRIVATE ISLE_DEBUG)
+    ### Imgui complains because of SDL3... Trying to include only with SDL2 support like it should also have...
     target_link_libraries(isle PRIVATE imgui)
+
     find_path(valgrind_INCLUDE_PATH NAMES valgrind/callgrind.h)
     if(valgrind_INCLUDE_PATH)
       # Run isle under valgrind to create a profile. Use e.g. kcachegrind to view the profile.
@@ -548,7 +622,8 @@ if (ISLE_BUILD_CONFIG)
     target_link_libraries(config PRIVATE DirectX5::DirectX5)
   endif()
   target_compile_definitions(config PRIVATE DIRECT3D_VERSION=0x500)
-  target_link_libraries(config PRIVATE SDL3::SDL3 Isle::iniparser)
+  # target_link_libraries(config PRIVATE SDL3::SDL3 Isle::iniparser)
+  target_link_libraries(config PRIVATE SDL2::SDL2 Isle::iniparser)
   if (NOT ISLE_MINIWIN)
     target_link_libraries(config PRIVATE ddraw dxguid)
   endif()
@@ -611,9 +686,10 @@ endif()
 
 set(install_extra_targets)
 if(DOWNLOAD_DEPENDENCIES)
-  get_property(sdl3_type TARGET SDL3::SDL3 PROPERTY TYPE)
-  if(sdl3_type STREQUAL "SHARED_LIBRARY")
-    list(APPEND install_extra_targets "SDL3-shared")
+  # get_property(sdl3_type TARGET SDL3::SDL3 PROPERTY TYPE)
+  get_property(sdl2_type TARGET SDL2::SDL2 PROPERTY TYPE)
+  if(sdl2_type STREQUAL "SHARED_LIBRARY")
+    list(APPEND install_extra_targets "SDL2-shared")
   endif()
 endif()
 

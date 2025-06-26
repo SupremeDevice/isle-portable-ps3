@@ -37,8 +37,10 @@
 #include <miniwin/miniwindevice.h>
 
 #define SDL_MAIN_USE_CALLBACKS
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_main.h>
+// #include <SDL3/SDL.h>
+// #include <SDL3/SDL_main.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_main.h>
 #include <errno.h>
 #include <iniparser.h>
 #include <stdlib.h>
